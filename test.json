@@ -1,0 +1,25 @@
+{
+  "object_example": {
+    "nested_key": "nested_value"
+  },
+  "array_example": [
+    "string",
+    42,
+    3.14,
+    true,
+    false,
+    null,
+    {
+      "inner_object": "value"
+    },
+    [1, 2, 3]
+  ],
+  "string_example": "Hello, world",
+  "number_example_integer": 123,
+  "number_example_float": 123.456,
+  "number_example_negative": -789,
+  "number_example_exponential": 1.23e4,
+  "boolean_true": true,
+  "boolean_false": false,
+  "null_example": null
+}

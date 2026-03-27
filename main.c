@@ -1,7 +1,11 @@
-#include "include/app.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
-int main(int argc, char **argv) {
-  App.Run();
+#include "include/json.h"
 
-  return 0;
+int main(void) {
+  const char *json = "-420.69e-3";
+  JsonDocument *json_obj = JsonSerializer.Deserialize(json);
+
+  return EXIT_SUCCESS;
 }
