@@ -4,7 +4,7 @@
 #include "include/json.h"
 
 int main(void) {
-  const char *json = "-420.69e-3";
+  const char *json = "{\"name\":\"Joshua\",\"age\":29}";
   JsonDocument *json_obj = JsonSerializer.Deserialize(json);
 
   return EXIT_SUCCESS;

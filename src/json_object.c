@@ -122,3 +122,8 @@ int json_object_set(JsonObject *object, const char *key, JsonValue *value) {
 
   return 1;
 }
+
+JsonObjectEntryPair *_entry_start_iter(JsonObject *object) {}
+
+JsonObjectEntryPair *_entry_next_iter(JsonObject *object,
+                                      JsonObjectEntryPair *current) {}

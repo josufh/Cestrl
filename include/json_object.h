@@ -6,6 +6,11 @@
 #include "json.h"
 #include "json_value.h"
 
+typedef struct {
+  const char *key;
+  JsonValue *value;
+} JsonObjectEntryPair;
+
 typedef struct JsonObjectEntry {
   const char *key;
   JsonValue *value;
@@ -19,5 +24,9 @@ typedef struct {
 } JsonObject;
 
 int json_object_set(JsonObject *object, const char *key, JsonValue *value);
+
+JsonObjectEntryPair *_entry_start_iter(JsonObject *object);
+JsonObjectEntryPair *_entry_next_iter(JsonObject *object,
+                                      JsonObjectEntryPair *current);
 
 #endif // !JSON_OBJECT_H

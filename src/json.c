@@ -131,9 +131,14 @@ static JsonValue *new_node(JsonValueType type, void *value) {
   switch (type) {
   case String:
     node->value = value;
+    break;
   case Number:
     node->value = alloc_number();
     memcpy(node->value, value, sizeof(double));
+    break;
+  case Object:
+    node->value = value;
+    break;
   default:
     fprintf(stderr, "Not implemented new_node type\n");
     exit(EXIT_FAILURE);
@@ -155,6 +160,7 @@ static JsonValue *parse_value(const char **json_raw) {
     node = new_node(type, &number);
   } else if (type == Object) {
     JsonObject *object = parse_object(json_raw);
+    node = new_node(type, object);
   }
 
   skip_whitespace(json_raw);
@@ -162,11 +168,38 @@ static JsonValue *parse_value(const char **json_raw) {
   return node;
 }
 
-static void parse_json(const char *json_raw) { parse_value(&json_raw); }
-
-static JsonDocument *DeserializeImpl(const char *json) {
-  parse_json(json);
-  return NULL;
+static JsonDocument *parse_json(const char *json_raw) {
+  JsonValue *top_level_value = parse_value(&json_raw);
+  JsonDocument *document = malloc(sizeof(JsonDocument));
+  document->top_node = top_level_value;
+  return document;
 }
 
-const JsonSerializerStruct JsonSerializer = {.Deserialize = DeserializeImpl};
+static JsonDocument *DeserializeImpl(const char *json) {
+  return parse_json(json);
+}
+
+static void print_value(JsonValue *value) {
+  printf(" ");
+
+  switch (value->type) {
+  case String:
+    printf("%s", (char *)value->value);
+    break;
+  case Number:
+    printf("%f", *(double *)value->value);
+    break;
+  case Object:
+
+    break;
+  default:
+    printf("Not implemented, print_value\n");
+  }
+
+  printf(" ");
+}
+
+static void PrintImpl(JsonDocument *document) {}
+
+const JsonSerializerStruct JsonSerializer = {.Print = PrintImpl,
+                                             .Deserialize = DeserializeImpl};
