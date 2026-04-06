@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../include/dynamic_array.h"
 #include "../include/json_object.h"
 #include "../include/string_builder.h"
 
@@ -113,13 +114,34 @@ static JsonObject *parse_object(const char **json_raw) {
     (*json_raw)++; // Skip :
 
     JsonValue *value = parse_value(json_raw);
-    json_object_set(object, string, value);
+    json_object_set(&object, string, value);
 
     if (**json_raw == ',')
       (*json_raw)++;
   }
 
+  (*json_raw)++; // Skip }
+
   return object;
+}
+
+static JsonValue *parse_array(const char **json_raw) {
+  JsonValue *array = NULL;
+
+  (*json_raw)++; // Skip [
+  skip_whitespace(json_raw);
+
+  while (**json_raw != ']') {
+    JsonValue *value = parse_value(json_raw);
+    darr_add(array, *value);
+
+    if (**json_raw == ',')
+      (*json_raw)++;
+  }
+
+  (*json_raw)++; // Skip ]
+
+  return array;
 }
 
 static void *alloc_number() { return malloc(sizeof(double)); }
@@ -139,6 +161,13 @@ static JsonValue *new_node(JsonValueType type, void *value) {
   case Object:
     node->value = value;
     break;
+  case Array:
+    node->value = value;
+    break;
+  case True:
+  case False:
+  case Null:
+    node->value = NULL;
   default:
     fprintf(stderr, "Not implemented new_node type\n");
     exit(EXIT_FAILURE);
@@ -161,6 +190,14 @@ static JsonValue *parse_value(const char **json_raw) {
   } else if (type == Object) {
     JsonObject *object = parse_object(json_raw);
     node = new_node(type, object);
+  } else if (type == Array) {
+    JsonValue *array = parse_array(json_raw);
+    node = new_node(type, array);
+  } else if (type == True || type == False || type == Null) {
+    node = new_node(type, NULL);
+  } else {
+    fprintf(stderr, "Not implemented parse_value type\n");
+    exit(EXIT_FAILURE);
   }
 
   skip_whitespace(json_raw);
@@ -190,7 +227,22 @@ static void print_value(JsonValue *value) {
     printf("%f", *(double *)value->value);
     break;
   case Object:
-
+    printf("{ ");
+    json_object_foreach((JsonObject *)value->value, pair) {
+      printf("%s: ", pair->key);
+      print_value(pair->value);
+    }
+    printf(" }");
+    break;
+  case Array:
+    printf("[ ");
+    JsonValue *array = value->value;
+    for (size_t i = 0; i < darr_len(array); i++) {
+      print_value(&array[i]);
+      if (i + 1 < darr_len(array))
+        printf(" ");
+    }
+    printf(" ]");
     break;
   default:
     printf("Not implemented, print_value\n");
@@ -199,7 +251,9 @@ static void print_value(JsonValue *value) {
   printf(" ");
 }
 
-static void PrintImpl(JsonDocument *document) {}
+static void PrintImpl(JsonDocument *document) {
+  print_value(document->top_node);
+}
 
 const JsonSerializerStruct JsonSerializer = {.Print = PrintImpl,
                                              .Deserialize = DeserializeImpl};

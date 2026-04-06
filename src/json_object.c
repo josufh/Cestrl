@@ -74,25 +74,25 @@ static JsonObjectEntry *object_create_entry(const char *key, JsonValue *value) {
   return entry;
 }
 
-int json_object_set(JsonObject *object, const char *key, JsonValue *value) {
-  if (!object) {
-    object = malloc(sizeof(JsonObject));
+int json_object_set(JsonObject **object, const char *key, JsonValue *value) {
+  if (!*object) {
+    *object = malloc(sizeof(JsonObject));
 
-    object->buckets = (JsonObjectEntry **)calloc(OBJECT_INIT_CAPACITY,
-                                                 sizeof(JsonObjectEntry *));
-    if (!object->buckets) {
+    (*object)->buckets = (JsonObjectEntry **)calloc(OBJECT_INIT_CAPACITY,
+                                                    sizeof(JsonObjectEntry *));
+    if (!(*object)->buckets) {
       free(object);
       exit(1);
     }
-    object->capacity = OBJECT_INIT_CAPACITY;
-    object->count = 0;
+    (*object)->capacity = OBJECT_INIT_CAPACITY;
+    (*object)->count = 0;
   }
 
   if (!key || !value)
     return 0;
 
-  size_t index = object_key_index(key, object->capacity);
-  JsonObjectEntry *current = object->buckets[index];
+  size_t index = object_key_index(key, (*object)->capacity);
+  JsonObjectEntry *current = (*object)->buckets[index];
 
   while (current) {
     if (strcmp(current->key, key) == 0) {
@@ -106,24 +106,56 @@ int json_object_set(JsonObject *object, const char *key, JsonValue *value) {
     current = current->next;
   }
 
-  if (!object_maybe_grow(object)) {
+  if (!object_maybe_grow((*object))) {
     return 0;
   }
 
-  index = object_key_index(key, object->capacity);
+  index = object_key_index(key, (*object)->capacity);
 
   current = object_create_entry(key, value);
   if (!current)
     return 0;
 
-  current->next = object->buckets[index];
-  object->buckets[index] = current;
-  object->count++;
+  current->next = (*object)->buckets[index];
+  (*object)->buckets[index] = current;
+  (*object)->count++;
 
   return 1;
 }
 
-JsonObjectEntryPair *_entry_start_iter(JsonObject *object) {}
-
 JsonObjectEntryPair *_entry_next_iter(JsonObject *object,
-                                      JsonObjectEntryPair *current) {}
+                                      JsonObjectEntryPair *current) {
+  if (!current) {
+    for (size_t i = 0; i < object->capacity; i++) {
+      if (object->buckets[i]) {
+        object->iter_current = (JsonObjectEntryPair *)object->buckets[i];
+        return object->iter_current;
+      }
+    }
+  } else {
+    JsonObjectEntry *current_entry = (JsonObjectEntry *)current;
+    JsonObjectEntry *next = current_entry->next;
+
+    if (next) {
+      object->iter_current = (JsonObjectEntryPair *)next;
+      return object->iter_current;
+    }
+
+    size_t index =
+        object_key_index(object->iter_current->key, object->capacity);
+
+    for (size_t i = index + 1; i < object->capacity; i++) {
+      if (object->buckets[i]) {
+        object->iter_current = (JsonObjectEntryPair *)object->buckets[i];
+        return object->iter_current;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+JsonObjectEntryPair *_entry_start_iter(JsonObject *object) {
+  object->iter_current = NULL;
+  return _entry_next_iter(object, NULL);
+}
